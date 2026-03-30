@@ -8,16 +8,14 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { buildIndex, buildSearchIndex, computeDivisions } from "./registry.js";
 import { registerHandlers } from "./tools.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
-  readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
+  readFileSync(join(import.meta.dirname, "..", "package.json"), "utf-8"),
 );
 
 // --- Configuration via environment variables ---

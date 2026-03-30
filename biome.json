@@ -11,7 +11,9 @@
       },
       "style": {
         "useConst": "error",
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "useImportType": "error",
+        "noDefaultExport": "error"
       }
     }
   },
