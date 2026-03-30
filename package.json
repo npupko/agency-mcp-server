@@ -25,12 +25,18 @@
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "ai",
     "claude",
+    "claude-code",
+    "cursor",
+    "windsurf",
     "llm",
     "agents",
-    "agent-registry"
+    "agent-registry",
+    "agent-templates",
+    "context-optimization"
   ],
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",

@@ -78,6 +78,14 @@ Add to your MCP config:
 
 That's it. First launch clones templates to `~/.cache/agency-mcp-server/` and pulls updates every 24 hours.
 
+### Verify it works
+
+Ask your assistant:
+
+> "Search for a game economy designer agent"
+
+You should see results from the `agency_search` tool. If it's the first run, templates will auto-download (~30 seconds).
+
 ## How It Works
 
 Your assistant gets two tools:
