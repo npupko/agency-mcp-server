@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join, basename } from "node:path";
-import { parse as parseYaml } from "yaml";
+import { readdirSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import MiniSearch, { type SearchResult } from "minisearch";
+import { parse as parseYaml } from "yaml";
 import type { AgentRecord, DivisionSummary } from "./types.js";
 
 interface IndexedAgent extends AgentRecord {
@@ -14,15 +14,17 @@ const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/;
 
 function parseFrontmatter(raw: string): Record<string, unknown> {
   const match = raw.match(FRONTMATTER_RE);
-  if (!match) return {};
+  if (!match?.[1]) return {};
+  const frontmatter = match[1];
   try {
-    return parseYaml(match[1]) ?? {};
+    return parseYaml(frontmatter) ?? {};
   } catch {
     // Malformed YAML (e.g. unquoted colons) — extract top-level keys manually
     const result: Record<string, string> = {};
-    for (const line of match[1].split("\n")) {
+    for (const line of frontmatter.split("\n")) {
       const idx = line.indexOf(":");
-      if (idx > 0) result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+      if (idx > 0)
+        result[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
     }
     return result;
   }
@@ -45,7 +47,6 @@ const DIVISIONS = [
 ];
 
 const DESCRIPTION_LIMIT = 150;
-const SEARCH_RESULT_LIMIT = 20;
 
 export function buildIndex(basePath: string): AgentRecord[] {
   const records: AgentRecord[] = [];
@@ -57,7 +58,9 @@ export function buildIndex(basePath: string): AgentRecord[] {
     try {
       entries = readdirSync(divPath).filter((f) => f.endsWith(".md"));
     } catch {
-      console.error(`[agency] Warning: could not read division directory: ${divPath}`);
+      console.error(
+        `[agency] Warning: could not read division directory: ${divPath}`,
+      );
       continue;
     }
 
@@ -73,7 +76,8 @@ export function buildIndex(basePath: string): AgentRecord[] {
 
         records.push({ slug, name, description, division, filePath });
       } catch (err) {
-        const msg = err instanceof Error ? err.message.split("\n")[0] : String(err);
+        const msg =
+          err instanceof Error ? err.message.split("\n")[0] : String(err);
         console.error(`[agency] Warning: skipping ${file} — ${msg}`);
       }
     }
@@ -108,7 +112,7 @@ export function searchAgents(
   index: SearchIndex,
   records: AgentRecord[],
   query?: string,
-  division?: string
+  division?: string,
 ): AgentRecord[] {
   if (!query) {
     if (!division) return records;
@@ -116,14 +120,15 @@ export function searchAgents(
   }
 
   const filter = division
-    ? (result: SearchResult) => matchesDivision(division, (result as AgentSearchResult).division)
+    ? (result: SearchResult) =>
+        matchesDivision(division, (result as AgentSearchResult).division)
     : undefined;
 
   return index.search(query, { filter }) as AgentSearchResult[];
 }
 
 function truncate(s: string, limit: number): string {
-  return s.length > limit ? s.slice(0, limit) + "…" : s;
+  return s.length > limit ? `${s.slice(0, limit)}…` : s;
 }
 
 export function formatAgentLine(r: AgentRecord, index?: number): string {
@@ -132,7 +137,6 @@ export function formatAgentLine(r: AgentRecord, index?: number): string {
 }
 
 export const LAUNCH_TEMPLATE = `Agent(prompt: "Read <file> — this is your system prompt. Follow it completely.\\n\\nTask: <describe the user's task>")`;
-
 
 export function computeDivisions(records: AgentRecord[]): DivisionSummary[] {
   const grouped = new Map<string, AgentRecord[]>();

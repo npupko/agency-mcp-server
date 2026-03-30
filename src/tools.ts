@@ -1,24 +1,25 @@
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { AgentRecord, DivisionSummary } from "./types.js";
+import { z } from "zod";
 import type { SearchIndex } from "./registry.js";
-import {
-  searchAgents,
-  formatAgentLine,
-  LAUNCH_TEMPLATE,
-} from "./registry.js";
+import { formatAgentLine, LAUNCH_TEMPLATE, searchAgents } from "./registry.js";
+import type { AgentRecord, DivisionSummary } from "./types.js";
 
 function textResult(text: string, isError = false) {
-  return { content: [{ type: "text" as const, text }], ...(isError && { isError: true }) };
+  return {
+    content: [{ type: "text" as const, text }],
+    ...(isError && { isError: true }),
+  };
 }
 
 export function registerHandlers(
   server: McpServer,
   index: SearchIndex,
   records: AgentRecord[],
-  divisions: DivisionSummary[]
+  divisions: DivisionSummary[],
 ): void {
-  const divisionList = divisions.map((d) => `${d.division} (${d.count})`).join(", ");
+  const divisionList = divisions
+    .map((d) => `${d.division} (${d.count})`)
+    .join(", ");
 
   const readOnlyAnnotations = {
     readOnlyHint: true,
@@ -27,7 +28,11 @@ export function registerHandlers(
     openWorldHint: false,
   } as const;
 
-  const agentsJson = JSON.stringify(records.map(({ filePath: _, ...r }) => r), null, 2);
+  const agentsJson = JSON.stringify(
+    records.map(({ filePath: _, ...r }) => r),
+    null,
+    2,
+  );
   const divisionsJson = JSON.stringify(divisions, null, 2);
 
   // --- Tools ---
@@ -47,11 +52,15 @@ export function registerHandlers(
     {
       query: z
         .string()
-        .describe("Task or keyword to search for (e.g. 'game mechanics', 'frontend React', 'security audit')"),
+        .describe(
+          "Task or keyword to search for (e.g. 'game mechanics', 'frontend React', 'security audit')",
+        ),
       division: z
         .string()
         .optional()
-        .describe("Optional: narrow to a division (e.g. 'engineering', 'game-development')"),
+        .describe(
+          "Optional: narrow to a division (e.g. 'engineering', 'game-development')",
+        ),
     },
     readOnlyAnnotations,
     async ({ query, division }) => {
@@ -60,18 +69,20 @@ export function registerHandlers(
       if (matches.length === 0) {
         return textResult(
           `No agents matched "${query}"${division ? ` in division "${division}"` : ""}.\n\nAvailable divisions: ${divisionList}\n\n→ Try broader keywords or use agency_browse to explore.`,
-          true
+          true,
         );
       }
 
       const top = matches.slice(0, 5);
 
-      return textResult([
-        `Found ${matches.length} match${matches.length === 1 ? "" : "es"}:\n`,
-        ...top.map((r, i) => formatAgentLine(r, i + 1)),
-        `\n→ Pick the best match and spawn:\n  ${LAUNCH_TEMPLATE}`,
-      ].join("\n"));
-    }
+      return textResult(
+        [
+          `Found ${matches.length} match${matches.length === 1 ? "" : "es"}:\n`,
+          ...top.map((r, i) => formatAgentLine(r, i + 1)),
+          `\n→ Pick the best match and spawn:\n  ${LAUNCH_TEMPLATE}`,
+        ].join("\n"),
+      );
+    },
   );
 
   server.tool(
@@ -91,27 +102,35 @@ export function registerHandlers(
     async ({ division }) => {
       if (!division) {
         const lines = divisions.map(
-          (d) => `${d.division} (${d.count} agents) — e.g. ${d.examples.join(", ")}`
+          (d) =>
+            `${d.division} (${d.count} agents) — e.g. ${d.examples.join(", ")}`,
         );
-        return textResult([
-          `${records.length} agents across ${divisions.length} divisions:\n`,
-          ...lines,
-          `\n→ agency_browse(division: "<name>") to list agents in a division`,
-          `→ agency_search(query: "<task>") to find the right agent directly`,
-        ].join("\n"));
+        return textResult(
+          [
+            `${records.length} agents across ${divisions.length} divisions:\n`,
+            ...lines,
+            `\n→ agency_browse(division: "<name>") to list agents in a division`,
+            `→ agency_search(query: "<task>") to find the right agent directly`,
+          ].join("\n"),
+        );
       }
 
       const agents = searchAgents(index, records, undefined, division);
       if (agents.length === 0) {
-        return textResult(`Division "${division}" not found. Available: ${divisionList}`, true);
+        return textResult(
+          `Division "${division}" not found. Available: ${divisionList}`,
+          true,
+        );
       }
 
-      return textResult([
-        `${agents.length} agents in "${division}":\n`,
-        ...agents.map((r, i) => formatAgentLine(r, i + 1)),
-        `\n→ agency_search(query: "<task>") to find the best match and get launch instructions`,
-      ].join("\n"));
-    }
+      return textResult(
+        [
+          `${agents.length} agents in "${division}":\n`,
+          ...agents.map((r, i) => formatAgentLine(r, i + 1)),
+          `\n→ agency_search(query: "<task>") to find the best match and get launch instructions`,
+        ].join("\n"),
+      );
+    },
   );
 
   // --- Resources ---
@@ -121,16 +140,19 @@ export function registerHandlers(
     "agency://agents",
     {
       title: "Agent Index",
-      description: "Full index of all agent templates with names, descriptions, divisions, and file paths",
+      description:
+        "Full index of all agent templates with names, descriptions, divisions, and file paths",
       mimeType: "application/json",
     },
     async () => ({
-      contents: [{
-        uri: "agency://agents",
-        mimeType: "application/json",
-        text: agentsJson,
-      }],
-    })
+      contents: [
+        {
+          uri: "agency://agents",
+          mimeType: "application/json",
+          text: agentsJson,
+        },
+      ],
+    }),
   );
 
   server.registerResource(
@@ -142,12 +164,14 @@ export function registerHandlers(
       mimeType: "application/json",
     },
     async () => ({
-      contents: [{
-        uri: "agency://divisions",
-        mimeType: "application/json",
-        text: divisionsJson,
-      }],
-    })
+      contents: [
+        {
+          uri: "agency://divisions",
+          mimeType: "application/json",
+          text: divisionsJson,
+        },
+      ],
+    }),
   );
 
   // --- Prompts ---
@@ -158,7 +182,11 @@ export function registerHandlers(
       title: "Use Agency Agent",
       description: "Find the best agent for a task and get spawn instructions",
       argsSchema: {
-        task: z.string().describe("What you need help with (e.g. 'design a game economy', 'audit security')"),
+        task: z
+          .string()
+          .describe(
+            "What you need help with (e.g. 'design a game economy', 'audit security')",
+          ),
         division: z.string().optional().describe("Optional division filter"),
       },
     },
@@ -167,16 +195,19 @@ export function registerHandlers(
       const top = matches.slice(0, 3);
 
       return {
-        messages: [{
-          role: "user",
-          content: {
-            type: "text",
-            text: top.length === 0
-              ? `Find and use the best agency agent for this task: ${task}\n\nNo agents matched. Available divisions: ${divisionList}\n\nTry broader keywords.`
-              : `Find and use the best agency agent for this task: ${task}\n\nTop matches:\n${top.map((r, i) => formatAgentLine(r, i + 1)).join("\n")}\n\n${LAUNCH_TEMPLATE}`,
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text:
+                top.length === 0
+                  ? `Find and use the best agency agent for this task: ${task}\n\nNo agents matched. Available divisions: ${divisionList}\n\nTry broader keywords.`
+                  : `Find and use the best agency agent for this task: ${task}\n\nTop matches:\n${top.map((r, i) => formatAgentLine(r, i + 1)).join("\n")}\n\n${LAUNCH_TEMPLATE}`,
+            },
           },
-        }],
+        ],
       };
-    }
+    },
   );
 }
