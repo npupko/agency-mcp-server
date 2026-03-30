@@ -1,43 +1,36 @@
 # agency-mcp-server
 
-## Why
+> One MCP config entry. 150+ specialist agents on demand. No manual setup.
 
-Claude Code, Cursor, and similar tools are generalists. Sometimes you need a specialist — someone who knows game economy design, or security auditing, or technical writing. That means finding the right system prompt, wiring it up, and doing it again next time for a different task.
-
-[agency-agents](https://github.com/msitarzewski/agency-agents) has 140+ of these prompts, organized by division. They ship install scripts that copy everything into your tool's config. It works, but:
-
-- You still have to browse the repo to figure out which agent fits your task
-- 140+ agents get dumped into your config — most of them irrelevant to what you're doing right now
-- Templates are static copies. Updates mean re-running the installer
-- Switching tools means re-running it again
-
-This MCP server does it differently. Instead of copying files around, it's a search service. You describe what you need, your assistant finds the right agent and spawns it. One config entry, no manual browsing.
+Your AI assistant is a generalist. Sometimes you need a specialist -- a game economy designer, a security auditor, a technical writer. This MCP server gives your assistant instant access to 150+ expert agent templates. Describe what you need, it finds the right agent and spawns it.
 
 ```
 You: "Help me design a balanced game economy"
-Claude: [searches → finds Game Economy Designer → spawns it → you get an expert response]
+Claude: [searches -> finds Game Economy Designer -> spawns it -> expert response]
 ```
 
-It auto-fetches the templates on first run and keeps them updated. You don't touch a thing.
+Templates auto-fetch on first run from [agency-agents](https://github.com/msitarzewski/agency-agents) and stay updated. You don't touch a thing.
 
 ## Quick Start
 
-### Claude Code (plugin)
+### Claude Code
+
+As a plugin:
 
 ```bash
 /plugin marketplace add npupko/agency-mcp-server
 /plugin install agency@agency-mcp-server
 ```
 
-Or as a one-liner:
+Or via CLI:
 
 ```bash
 claude mcp add agency -- npx -y agency-mcp-server
 ```
 
-### Manual (Cursor, other MCP clients)
+### Cursor, Windsurf, and other MCP clients
 
-Add this to your MCP config (`~/.claude/settings.json`, Cursor settings, etc.):
+Add to your MCP config:
 
 ```json
 {
@@ -50,11 +43,44 @@ Add this to your MCP config (`~/.claude/settings.json`, Cursor settings, etc.):
 }
 ```
 
-First launch clones [agency-agents](https://github.com/msitarzewski/agency-agents) to `~/.cache/agency-mcp-server/`. After that it pulls updates every 24 hours.
+That's it. First launch clones templates to `~/.cache/agency-mcp-server/` and pulls updates every 24 hours.
 
-### Custom templates
+## How It Works
 
-Point it at your own directory instead:
+Your assistant gets two tools:
+
+1. **`agency_search(query, division?)`** -- describe a task, get matching agents with spawn instructions
+2. **`agency_browse(division?)`** -- explore divisions and agents when you want to see what's available
+
+When you ask for help with something specific, your assistant calls `agency_search`, picks the best match, and spawns a subagent with that specialist's full system prompt. You get an expert response without ever touching a config file.
+
+### What's available
+
+Agents are organized into divisions:
+
+| Division | Examples |
+|----------|----------|
+| Engineering | Software Architect, DevOps Engineer, Technical Writer |
+| Design | UI Designer, UX Researcher, Design Systems |
+| Game Development | Game Economy Designer, Game Mechanics Designer |
+| Marketing | Content Strategist, SEO Specialist, Email Marketing |
+| Security & Specialized | Security Auditor, Data Scientist, Legal Analyst |
+| ...and more | Academic, Sales, Strategy, Support, Testing, Spatial Computing |
+
+## Configuration
+
+All configuration is through environment variables in your MCP config:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENCY_AGENTS_PATH` | `~/.cache/agency-mcp-server/agency-agents` | Path to agent templates. Set this to use your own templates instead of auto-cloning |
+| `AGENCY_REPO_URL` | `https://github.com/msitarzewski/agency-agents.git` | Git repo to clone templates from. Point at your fork |
+| `AGENCY_AUTO_UPDATE` | `true` | Set to `false` to disable automatic pulls |
+| `AGENCY_UPDATE_INTERVAL` | `24` | Hours between update checks |
+
+### Use your own templates
+
+Point at a local directory:
 
 ```json
 {
@@ -70,49 +96,34 @@ Point it at your own directory instead:
 }
 ```
 
-## Configuration
-
-Everything is an env var in your MCP config:
-
-| Variable | Default | What it does |
-|----------|---------|--------------|
-| `AGENCY_AGENTS_PATH` | `~/.cache/agency-mcp-server/agency-agents` | Path to agent templates. Unset = auto-clone from repo |
-| `AGENCY_REPO_URL` | `https://github.com/msitarzewski/agency-agents.git` | Repo to clone from. Point this at your fork |
-| `AGENCY_AUTO_UPDATE` | `true` | Set `false` to never pull updates |
-| `AGENCY_UPDATE_INTERVAL` | `24` | Hours between update checks |
-
-**Use your own fork:**
+Or clone from your own repo:
 
 ```json
 {
-  "env": {
-    "AGENCY_REPO_URL": "https://github.com/yourorg/custom-agents.git"
-  }
-}
-```
-
-**Pin templates, skip updates entirely:**
-
-```json
-{
-  "env": {
-    "AGENCY_AUTO_UPDATE": "false"
+  "mcpServers": {
+    "agency": {
+      "command": "npx",
+      "args": ["-y", "agency-mcp-server"],
+      "env": {
+        "AGENCY_REPO_URL": "https://github.com/yourorg/custom-agents.git"
+      }
+    }
   }
 }
 ```
 
 ### Template format
 
-Markdown files with YAML front-matter, organized by division:
+Each agent is a Markdown file with YAML front-matter, organized by division:
 
 ```
-agents/
-  engineering/
-    software-architect.md
-  design/
-    ui-designer.md
-  game-development/
-    game-mechanics-designer.md
+engineering/
+  software-architect.md
+  devops-engineer.md
+design/
+  ui-designer.md
+game-development/
+  game-economy-designer.md
 ```
 
 ```yaml
@@ -121,37 +132,41 @@ name: Software Architect
 description: Expert software architect specializing in system design...
 ---
 
-(Full agent system prompt below)
+Full agent system prompt goes here.
 ```
 
-## What's exposed over MCP
+The server indexes the `name` and `description` fields for search. The full Markdown body becomes the agent's system prompt when spawned.
 
-**Tools:**
+## MCP Interface
 
-- `agency_search(query, division?)` — find agents by task description, get spawn instructions
-- `agency_browse(division?)` — list divisions, or list agents in a division
+### Tools
 
-**Resources:**
+- **`agency_search(query, division?)`** -- find agents by task description, returns matches with file paths and a ready-to-use spawn template
+- **`agency_browse(division?)`** -- list all divisions, or list agents within a specific division
 
-- `agency://agents` — full index as JSON (attach via `@agency:agency://agents` to skip the tool call)
-- `agency://divisions` — division summary with counts
+### Resources
 
-**Prompts:**
+- **`agency://agents`** -- full agent index as JSON
+- **`agency://divisions`** -- division list with counts and examples
 
-- `use-agent` — describe a task, get the best match with ready-to-go spawn instructions
+### Prompts
+
+- **`use-agent`** -- describe a task, get the best-matching agent with spawn instructions
 
 ## Development
 
 ```bash
 npm install
-npm run typecheck
 npm run build
 
 # Run with auto-fetched templates
 node dist/index.js
 
-# Run with your own
+# Run with local templates
 AGENCY_AGENTS_PATH=./my-agents node dist/index.js
+
+# Type checking
+npm run typecheck
 
 # MCP Inspector
 npm run inspect
