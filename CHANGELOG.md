@@ -1,5 +1,11 @@
 # agency-mcp-server
 
+## 0.2.2
+
+### Patch Changes
+
+- [`1a49b1f`](https://github.com/npupko/agency-mcp-server/commit/1a49b1fcb3ff48e09637d7410d6c8b85d194b258) Thanks [@npupko](https://github.com/npupko)! - Add mcpName field and server.json for Official MCP Registry publishing
+
 ## 0.2.1
 
 ### Patch Changes
