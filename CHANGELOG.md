@@ -1,5 +1,11 @@
 # agency-mcp-server
 
+## 0.2.1
+
+### Patch Changes
+
+- [`7369f53`](https://github.com/npupko/agency-mcp-server/commit/7369f5369bae3753b0109108ca6e09f7edc66ea2) Thanks [@npupko](https://github.com/npupko)! - Replace inline CJS script with jq for jsr.json version sync
+
 ## 0.2.0
 
 ### Minor Changes
