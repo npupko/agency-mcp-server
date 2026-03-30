@@ -1,0 +1,12 @@
+# agency-mcp-server
+
+## 0.2.0
+
+### Minor Changes
+
+- [#1](https://github.com/npupko/agency-mcp-server/pull/1) [`9d4921a`](https://github.com/npupko/agency-mcp-server/commit/9d4921aa1d9f09ee31aac4979aad37845ee73823) Thanks [@npupko](https://github.com/npupko)! - Modernize to ES2024 and Node 22 best practices
+
+  - **BREAKING**: Minimum Node.js version raised from 18 to 22 (Node 18 reached EOL April 2025)
+  - Target ES2024, enabling native `Map.groupBy` and `import.meta.dirname`
+  - Add stricter TypeScript options: `verbatimModuleSyntax`, `exactOptionalPropertyTypes`, `moduleDetection: "force"`
+  - Add Biome rules: `useImportType` and `noDefaultExport`
