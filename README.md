@@ -22,6 +22,21 @@ It auto-fetches the templates on first run and keeps them updated. You don't tou
 
 ## Quick Start
 
+### Claude Code (plugin)
+
+```bash
+/plugin marketplace add npupko/agency-mcp-server
+/plugin install agency@agency-mcp-server
+```
+
+Or as a one-liner:
+
+```bash
+claude mcp add agency -- npx -y agency-mcp-server
+```
+
+### Manual (Cursor, other MCP clients)
+
 Add this to your MCP config (`~/.claude/settings.json`, Cursor settings, etc.):
 
 ```json

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agency": {
+      "command": "npx",
+      "args": ["-y", "agency-mcp-server"]
+    }
+  }
+}
