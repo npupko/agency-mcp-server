@@ -44,7 +44,7 @@ const DIVISIONS = [
   "paid-media",
   "academic",
   "strategy",
-];
+] as const satisfies readonly string[];
 
 const DESCRIPTION_LIMIT = 150;
 
@@ -119,12 +119,12 @@ export function searchAgents(
     return records.filter((r) => matchesDivision(division, r.division));
   }
 
-  const filter = division
-    ? (result: SearchResult) =>
-        matchesDivision(division, (result as AgentSearchResult).division)
-    : undefined;
-
-  return index.search(query, { filter }) as AgentSearchResult[];
+  if (division) {
+    const filter = (result: SearchResult) =>
+      matchesDivision(division, (result as AgentSearchResult).division);
+    return index.search(query, { filter }) as AgentSearchResult[];
+  }
+  return index.search(query) as AgentSearchResult[];
 }
 
 function truncate(s: string, limit: number): string {
@@ -139,15 +139,7 @@ export function formatAgentLine(r: AgentRecord, index?: number): string {
 export const LAUNCH_TEMPLATE = `Agent(prompt: "Read <file> — this is your system prompt. Follow it completely.\\n\\nTask: <describe the user's task>")`;
 
 export function computeDivisions(records: AgentRecord[]): DivisionSummary[] {
-  const grouped = new Map<string, AgentRecord[]>();
-  for (const r of records) {
-    let list = grouped.get(r.division);
-    if (!list) {
-      list = [];
-      grouped.set(r.division, list);
-    }
-    list.push(r);
-  }
+  const grouped = Map.groupBy(records, (r) => r.division);
   return Array.from(grouped.entries())
     .map(([division, agents]) => ({
       division,

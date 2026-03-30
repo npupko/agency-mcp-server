@@ -16,6 +16,34 @@ Claude: [searches -> finds Game Economy Designer -> spawns it -> expert response
 
 Templates auto-fetch on first run from [agency-agents](https://github.com/msitarzewski/agency-agents) and stay updated. You don't touch a thing.
 
+## Why not just install agents locally?
+
+You can. The [agency-agents](https://github.com/msitarzewski/agency-agents) install script copies all 160+ agent files directly into your tool's config directory (e.g. `~/.claude/agents/`). It works -- but every agent's name and description is loaded into the context window of every conversation, whether you use them or not.
+
+We measured it:
+
+| Approach | Context cost | When |
+|----------|-------------|------|
+| Installed agents (`~/.claude/agents/`) | **~8,300 tokens** | Every conversation, always |
+| MCP server (idle) | **~55 tokens** | Every conversation |
+| MCP server (searching) | **~350 tokens** | Only when you search |
+| MCP server (using an agent) | **~2,700 tokens** | Only when you spawn one (median) |
+
+That's a **150x reduction** in baseline context usage. You get the same 160+ agents, but you only pay for the one you're actually using.
+
+<details>
+<summary>How we measured this</summary>
+
+**Installed agents (8,300 tokens):** We ran the agency-agents install script (`install.sh --tool claude-code`), which copied 162 agent files to `~/.claude/agents/`. Then opened a fresh Claude Code session and ran `/context`. Claude Code reported "Custom agents: 8.3k tokens" -- loaded into every conversation regardless of whether any agent is used.
+
+**MCP idle (55 tokens):** With the MCP server configured instead, `/context` shows only the two deferred tool names (`agency_search`, `agency_browse`) and a brief server description in the system prompt. No agent data is loaded.
+
+**MCP searching (350 tokens):** Measured by tokenizing the full JSON tool schemas that get loaded when the assistant calls `ToolSearch` to resolve the `agency_search` and `agency_browse` tools. Counted with `@anthropic-ai/tokenizer`.
+
+**MCP using an agent (2,700 tokens):** The median token count across all 145 agent files, measured with `@anthropic-ai/tokenizer`. Only the single agent file you're actually using gets loaded into context. The range is 383–12,724 tokens depending on the agent (p25: 1,549, p75: 3,584).
+
+</details>
+
 ## Quick Start
 
 ### Claude Code
