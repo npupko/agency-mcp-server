@@ -41,7 +41,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "release": "npm run build && changeset publish",
-    "version": "node -e \"const f='jsr.json';const j=JSON.parse(require('fs').readFileSync(f));j.version=require('./package.json').version;require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')\" && git add jsr.json",
+    "changeset-version": "changeset version && node -e \"const f='jsr.json';const j=JSON.parse(require('fs').readFileSync(f));j.version=require('./package.json').version;require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')\"",
     "prepublishOnly": "npm run build",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },

@@ -1,5 +1,10 @@
 # agency-mcp-server
 
+[![npm version](https://img.shields.io/npm/v/agency-mcp-server)](https://www.npmjs.com/package/agency-mcp-server)
+[![JSR](https://jsr.io/badges/@npupko/agency-mcp-server)](https://jsr.io/@npupko/agency-mcp-server)
+[![CI](https://github.com/npupko/agency-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/npupko/agency-mcp-server/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 > One MCP config entry. 150+ specialist agents on demand. No manual setup.
 
 Your AI assistant is a generalist. Sometimes you need a specialist -- a game economy designer, a security auditor, a technical writer. This MCP server gives your assistant instant access to 150+ expert agent templates. Describe what you need, it finds the right agent and spawns it.
