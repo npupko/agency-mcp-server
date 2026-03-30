@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
-  "changelog": ["@changesets/changelog-github", { "repo": "npupko/agency-mcp-server" }],
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "npupko/agency-mcp-server" }
+  ],
   "commit": false,
   "fixed": [],
   "linked": [],
