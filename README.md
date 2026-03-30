@@ -2,20 +2,28 @@
 
 ## The Problem
 
-AI coding agents (Claude Code, Cursor, Windsurf, etc.) are general-purpose by default. When you need a specialist — a game economy designer, a security auditor, a technical writer — you're on your own: find the right system prompt, figure out how to wire it up as a subagent, and repeat the next time you need a different one.
+AI coding agents (Claude Code, Cursor, Windsurf, etc.) are general-purpose by default. When you need a specialist — a game economy designer, a security auditor, a technical writer — you need the right system prompt.
 
-[agency-agents](https://github.com/msitarzewski/agency-agents) solved the template problem: 140+ battle-tested agent prompts organized by division. But discovering and launching the right agent still requires manual browsing and copy-pasting.
+[agency-agents](https://github.com/msitarzewski/agency-agents) provides 140+ specialized agent templates with install scripts that copy them into your tool's config directory. This works, but it has trade-offs:
+
+- You need to **browse the repo manually** to find the right agent for your task
+- Templates are **static copies** — you re-run the install script to get updates
+- With 140+ agents copied locally, your tool may **surface all of them** even when most aren't relevant
+- Adding or switching tools means **re-running install scripts** per tool
 
 ## What This Solves
 
-This MCP server turns that static collection into a searchable, zero-config service. Your AI assistant can search for the right specialist, get the spawn instructions, and launch it — all in one flow, without you leaving your editor.
+This MCP server takes a different approach: instead of copying templates into each tool, it exposes the entire collection as a **searchable service**. Your AI assistant finds the right specialist on demand and spawns it as a subagent — no pre-installation, no manual browsing.
 
 ```
 You: "Help me design a balanced game economy"
 Claude: [searches agency → finds Game Economy Designer → spawns subagent → delivers expert response]
 ```
 
-No manual template hunting. No copy-paste. Just describe what you need.
+- **Zero setup** — auto-fetches templates on first run, keeps them updated
+- **Search, don't browse** — describe what you need, get the best match
+- **No clutter** — agents are loaded on demand, not dumped into your config
+- **Works across tools** — any MCP-compatible client (Claude Code, Cursor, etc.)
 
 ## Quick Start
 
