@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "agency",
-      "source": ".",
+      "source": "./",
       "description": "On-demand agent registry — search, browse, and spawn 140+ specialized AI agents",
       "category": "productivity"
     }
