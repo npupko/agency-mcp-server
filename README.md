@@ -88,10 +88,12 @@ You should see results from the `agency_search` tool. If it's the first run, tem
 
 ## How It Works
 
-Your assistant gets two tools:
+Your assistant gets four tools:
 
 1. **`agency_search(query, division?)`** -- describe a task, get matching agents with spawn instructions
 2. **`agency_browse(division?)`** -- explore divisions and agents when you want to see what's available
+3. **`agency_status()`** -- check index freshness: agent count, last update time, whether an update is available
+4. **`agency_update()`** -- pull latest templates from git and rebuild the search index without restarting
 
 When you ask for help with something specific, your assistant calls `agency_search`, picks the best match, and spawns a subagent with that specialist's full system prompt. You get an expert response without ever touching a config file.
 
@@ -184,6 +186,8 @@ The server indexes the `name` and `description` fields for search. The full Mark
 
 - **`agency_search(query, division?)`** -- find agents by task description, returns matches with file paths and a ready-to-use spawn template
 - **`agency_browse(division?)`** -- list all divisions, or list agents within a specific division
+- **`agency_status()`** -- check index freshness: agent count, last update time, whether an update is due
+- **`agency_update()`** -- pull latest templates from git and rebuild the search index at runtime
 
 ### Resources
 
