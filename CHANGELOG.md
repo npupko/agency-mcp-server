@@ -1,5 +1,11 @@
 # agency-mcp-server
 
+## 0.3.0
+
+### Minor Changes
+
+- [`8606b84`](https://github.com/npupko/agency-mcp-server/commit/8606b84b140b73c32b213f28447cf0818a75ba51) Thanks [@npupko](https://github.com/npupko)! - Add `agency_status` and `agency_update` tools for runtime index management
+
 ## 0.2.2
 
 ### Patch Changes

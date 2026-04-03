@@ -7,13 +7,15 @@
     "url": "https://github.com/npupko/agency-mcp-server",
     "source": "github"
   },
-  "version": "0.2.2",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "agency-mcp-server",
-      "version": "0.2.2",
-      "transport": { "type": "stdio" },
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
         {
           "name": "AGENCY_AGENTS_PATH",
