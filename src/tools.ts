@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { SearchIndex } from "./registry.js";
+import { createIndexState } from "./registry.js";
 import { formatAgentLine, LAUNCH_TEMPLATE, searchAgents } from "./registry.js";
-import type { AgentRecord, DivisionSummary } from "./types.js";
+import type { IndexState } from "./types.js";
 
 function textResult(text: string, isError = false) {
   return {
@@ -11,15 +11,25 @@ function textResult(text: string, isError = false) {
   };
 }
 
+export interface HandlerContext {
+  agentsPath: string;
+  isLocalPath: boolean;
+  updateIntervalMs: number;
+  lastPullTimestamp: () => number | null;
+  shouldPull: () => boolean;
+  pullRepo: () => void;
+}
+
 export function registerHandlers(
   server: McpServer,
-  index: SearchIndex,
-  records: AgentRecord[],
-  divisions: DivisionSummary[],
+  state: IndexState,
+  ctx: HandlerContext,
 ): void {
-  const divisionList = divisions
-    .map((d) => `${d.division} (${d.count})`)
-    .join(", ");
+  function divisionList() {
+    return state.divisions
+      .map((d) => `${d.division} (${d.count})`)
+      .join(", ");
+  }
 
   const readOnlyAnnotations = {
     readOnlyHint: true,
@@ -27,13 +37,6 @@ export function registerHandlers(
     idempotentHint: true,
     openWorldHint: false,
   } as const;
-
-  const agentsJson = JSON.stringify(
-    records.map(({ filePath: _, ...r }) => r),
-    null,
-    2,
-  );
-  const divisionsJson = JSON.stringify(divisions, null, 2);
 
   // --- Tools ---
 
@@ -64,11 +67,16 @@ export function registerHandlers(
     },
     readOnlyAnnotations,
     async ({ query, division }) => {
-      const matches = searchAgents(index, records, query, division);
+      const matches = searchAgents(
+        state.searchIndex,
+        state.records,
+        query,
+        division,
+      );
 
       if (matches.length === 0) {
         return textResult(
-          `No agents matched "${query}"${division ? ` in division "${division}"` : ""}.\n\nAvailable divisions: ${divisionList}\n\n→ Try broader keywords or use agency_browse to explore.`,
+          `No agents matched "${query}"${division ? ` in division "${division}"` : ""}.\n\nAvailable divisions: ${divisionList()}\n\n→ Try broader keywords or use agency_browse to explore.`,
           true,
         );
       }
@@ -101,13 +109,13 @@ export function registerHandlers(
     readOnlyAnnotations,
     async ({ division }) => {
       if (!division) {
-        const lines = divisions.map(
+        const lines = state.divisions.map(
           (d) =>
             `${d.division} (${d.count} agents) — e.g. ${d.examples.join(", ")}`,
         );
         return textResult(
           [
-            `${records.length} agents across ${divisions.length} divisions:\n`,
+            `${state.records.length} agents across ${state.divisions.length} divisions:\n`,
             ...lines,
             `\n→ agency_browse(division: "<name>") to list agents in a division`,
             `→ agency_search(query: "<task>") to find the right agent directly`,
@@ -115,10 +123,15 @@ export function registerHandlers(
         );
       }
 
-      const agents = searchAgents(index, records, undefined, division);
+      const agents = searchAgents(
+        state.searchIndex,
+        state.records,
+        undefined,
+        division,
+      );
       if (agents.length === 0) {
         return textResult(
-          `Division "${division}" not found. Available: ${divisionList}`,
+          `Division "${division}" not found. Available: ${divisionList()}`,
           true,
         );
       }
@@ -128,6 +141,91 @@ export function registerHandlers(
           `${agents.length} agents in "${division}":\n`,
           ...agents.map((r, i) => formatAgentLine(r, i + 1)),
           `\n→ agency_search(query: "<task>") to find the best match and get launch instructions`,
+        ].join("\n"),
+      );
+    },
+  );
+
+  server.tool(
+    "agency_status",
+    "Check the current status of the agent index — last update time, whether an update is available, and agent count.",
+    {},
+    readOnlyAnnotations,
+    async () => {
+      const stamp = ctx.lastPullTimestamp();
+      const lastPull = stamp !== null ? new Date(stamp).toISOString() : "never";
+      const updateAvailable = ctx.shouldPull();
+
+      const lines = [
+        `Agent count: ${state.records.length}`,
+        `Divisions: ${state.divisions.length}`,
+        `Source: ${ctx.agentsPath}`,
+        `Source type: ${ctx.isLocalPath ? "local path (AGENCY_AGENTS_PATH)" : "git repo"}`,
+        `Last updated: ${lastPull}`,
+        `Update interval: ${ctx.updateIntervalMs / 3_600_000}h`,
+        `Update available: ${updateAvailable ? "yes" : "no (within interval)"}`,
+      ];
+
+      if (ctx.isLocalPath) {
+        lines.push(
+          `\nNote: Using local path. "agency_update" will re-scan the directory without git pull.`,
+        );
+      }
+
+      return textResult(lines.join("\n"));
+    },
+  );
+
+  server.tool(
+    "agency_update",
+    "Pull latest agent templates from git (if applicable) and rebuild the search index.",
+    {},
+    {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    } as const,
+    async () => {
+      const oldCount = state.records.length;
+
+      if (!ctx.isLocalPath) {
+        try {
+          ctx.pullRepo();
+        } catch {
+          return textResult(
+            "Git pull failed. Index was not updated. Check network connectivity and try again.",
+            true,
+          );
+        }
+      }
+
+      const fresh = createIndexState(ctx.agentsPath);
+      Object.assign(state, fresh);
+
+      const newCount = state.records.length;
+      const diff = newCount - oldCount;
+      const diffStr =
+        diff === 0
+          ? "no change"
+          : diff > 0
+            ? `+${diff} new`
+            : `${diff} removed`;
+
+      try {
+        server.sendResourceListChanged();
+      } catch {
+        /* client may not support notifications */
+      }
+
+      return textResult(
+        [
+          "Index updated successfully.",
+          `Agents: ${oldCount} → ${newCount} (${diffStr})`,
+          `Divisions: ${state.divisions.length}`,
+          ctx.isLocalPath
+            ? "Re-scanned local directory."
+            : "Pulled latest from git and rebuilt index.",
         ].join("\n"),
       );
     },
@@ -149,7 +247,7 @@ export function registerHandlers(
         {
           uri: "agency://agents",
           mimeType: "application/json",
-          text: agentsJson,
+          text: state.agentsJson,
         },
       ],
     }),
@@ -168,7 +266,7 @@ export function registerHandlers(
         {
           uri: "agency://divisions",
           mimeType: "application/json",
-          text: divisionsJson,
+          text: state.divisionsJson,
         },
       ],
     }),
@@ -191,7 +289,12 @@ export function registerHandlers(
       },
     },
     async ({ task, division }) => {
-      const matches = searchAgents(index, records, task, division);
+      const matches = searchAgents(
+        state.searchIndex,
+        state.records,
+        task,
+        division,
+      );
       const top = matches.slice(0, 3);
 
       return {
@@ -202,7 +305,7 @@ export function registerHandlers(
               type: "text",
               text:
                 top.length === 0
-                  ? `Find and use the best agency agent for this task: ${task}\n\nNo agents matched. Available divisions: ${divisionList}\n\nTry broader keywords.`
+                  ? `Find and use the best agency agent for this task: ${task}\n\nNo agents matched. Available divisions: ${divisionList()}\n\nTry broader keywords.`
                   : `Find and use the best agency agent for this task: ${task}\n\nTop matches:\n${top.map((r, i) => formatAgentLine(r, i + 1)).join("\n")}\n\n${LAUNCH_TEMPLATE}`,
             },
           },

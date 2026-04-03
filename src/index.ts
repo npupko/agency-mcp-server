@@ -11,7 +11,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { buildIndex, buildSearchIndex, computeDivisions } from "./registry.js";
+import { createIndexState } from "./registry.js";
 import { registerHandlers } from "./tools.js";
 
 const pkg = JSON.parse(
@@ -41,19 +41,31 @@ function isDirectory(p: string): boolean {
   }
 }
 
+function lastPullTimestamp(): number | null {
+  try {
+    return Number(readFileSync(STAMP_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
 function shouldPull(): boolean {
   if (!AUTO_UPDATE) return false;
-  try {
-    const last = Number(readFileSync(STAMP_FILE, "utf-8"));
-    if (Date.now() - last < UPDATE_INTERVAL_MS) return false;
-  } catch {
-    /* no stamp yet */
-  }
-  return true;
+  const last = lastPullTimestamp();
+  return last === null || Date.now() - last >= UPDATE_INTERVAL_MS;
 }
 
 function markPulled(): void {
   writeFileSync(STAMP_FILE, String(Date.now()));
+}
+
+function pullRepo(): void {
+  execSync("git pull --ff-only", {
+    cwd: DEFAULT_AGENTS_PATH,
+    stdio: "ignore",
+    timeout: 15_000,
+  });
+  markPulled();
 }
 
 function ensureAgentsPath(): string {
@@ -75,12 +87,7 @@ function ensureAgentsPath(): string {
         `[agency] Updating agent templates in ${DEFAULT_AGENTS_PATH}`,
       );
       try {
-        execSync("git pull --ff-only", {
-          cwd: DEFAULT_AGENTS_PATH,
-          stdio: "ignore",
-          timeout: 15_000,
-        });
-        markPulled();
+        pullRepo();
       } catch {
         console.error(
           "[agency] Warning: git pull failed, using cached templates.",
@@ -110,20 +117,17 @@ function ensureAgentsPath(): string {
 const agentsPath = ensureAgentsPath();
 
 console.error(`[agency] Scanning agents in: ${agentsPath}`);
-const records = buildIndex(agentsPath);
+const state = createIndexState(agentsPath);
 
-if (records.length === 0) {
+if (state.records.length === 0) {
   console.error(
     "[agency] Fatal: No agents found. Check AGENCY_AGENTS_PATH points to a directory with agent markdown files.",
   );
   process.exit(1);
 }
 
-const searchIndex = buildSearchIndex(records);
-const divisions = computeDivisions(records);
-
 console.error(
-  `[agency] Indexed ${records.length} agents across ${divisions.length} divisions.`,
+  `[agency] Indexed ${state.records.length} agents across ${state.divisions.length} divisions.`,
 );
 
 const server = new McpServer({
@@ -131,7 +135,14 @@ const server = new McpServer({
   version: pkg.version,
 });
 
-registerHandlers(server, searchIndex, records, divisions);
+registerHandlers(server, state, {
+  agentsPath,
+  isLocalPath: !!process.env.AGENCY_AGENTS_PATH,
+  updateIntervalMs: UPDATE_INTERVAL_MS,
+  lastPullTimestamp,
+  shouldPull,
+  pullRepo,
+});
 
 async function main() {
   const transport = new StdioServerTransport();

@@ -11,3 +11,11 @@ export interface DivisionSummary {
   count: number;
   examples: string[];
 }
+
+export interface IndexState {
+  records: AgentRecord[];
+  searchIndex: import("./registry.js").SearchIndex;
+  divisions: DivisionSummary[];
+  agentsJson: string;
+  divisionsJson: string;
+}

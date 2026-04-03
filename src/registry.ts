@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import MiniSearch, { type SearchResult } from "minisearch";
 import { parse as parseYaml } from "yaml";
-import type { AgentRecord, DivisionSummary } from "./types.js";
+import type { AgentRecord, DivisionSummary, IndexState } from "./types.js";
 
 interface IndexedAgent extends AgentRecord {
   id: number;
@@ -137,6 +137,19 @@ export function formatAgentLine(r: AgentRecord, index?: number): string {
 }
 
 export const LAUNCH_TEMPLATE = `Agent(prompt: "Read <file> — this is your system prompt. Follow it completely.\\n\\nTask: <describe the user's task>")`;
+
+export function createIndexState(basePath: string): IndexState {
+  const records = buildIndex(basePath);
+  const searchIndex = buildSearchIndex(records);
+  const divisions = computeDivisions(records);
+  const agentsJson = JSON.stringify(
+    records.map(({ filePath: _, ...r }) => r),
+    null,
+    2,
+  );
+  const divisionsJson = JSON.stringify(divisions, null, 2);
+  return { records, searchIndex, divisions, agentsJson, divisionsJson };
+}
 
 export function computeDivisions(records: AgentRecord[]): DivisionSummary[] {
   const grouped = Map.groupBy(records, (r) => r.division);
