@@ -1,7 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { createIndexState } from "./registry.js";
-import { formatAgentLine, LAUNCH_TEMPLATE, searchAgents } from "./registry.js";
+import {
+  createIndexState,
+  formatAgentLine,
+  LAUNCH_TEMPLATE,
+  searchAgents,
+} from "./registry.js";
 import type { IndexState } from "./types.js";
 
 function textResult(text: string, isError = false) {
@@ -26,9 +30,7 @@ export function registerHandlers(
   ctx: HandlerContext,
 ): void {
   function divisionList() {
-    return state.divisions
-      .map((d) => `${d.division} (${d.count})`)
-      .join(", ");
+    return state.divisions.map((d) => `${d.division} (${d.count})`).join(", ");
   }
 
   const readOnlyAnnotations = {
