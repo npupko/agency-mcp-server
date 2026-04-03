@@ -1,7 +1,7 @@
 {
   "name": "agency",
   "description": "On-demand agent registry — search, browse, and spawn 140+ specialized AI agents",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "author": { "name": "npupko" },
   "homepage": "https://github.com/npupko/agency-mcp-server",
   "repository": "https://github.com/npupko/agency-mcp-server",

@@ -48,7 +48,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "release": "npm run build && changeset publish",
-    "changeset-version": "changeset version && jq --arg v \"$(jq -r .version package.json)\" '.version=$v' jsr.json > jsr.tmp && mv jsr.tmp jsr.json && jq --arg v \"$(jq -r .version package.json)\" '.version=$v | .packages[0].version=$v' server.json > server.tmp && mv server.tmp server.json",
+    "changeset-version": "changeset version && jq --arg v \"$(jq -r .version package.json)\" '.version=$v' jsr.json > jsr.tmp && mv jsr.tmp jsr.json && jq --arg v \"$(jq -r .version package.json)\" '.version=$v | .packages[0].version=$v' server.json > server.tmp && mv server.tmp server.json && jq --arg v \"$(jq -r .version package.json)\" '.version=$v' .claude-plugin/plugin.json > .claude-plugin/plugin.tmp && mv .claude-plugin/plugin.tmp .claude-plugin/plugin.json",
     "prepublishOnly": "npm run build",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
