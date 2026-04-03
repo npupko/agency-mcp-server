@@ -1,5 +1,11 @@
 # agency-mcp-server
 
+## 0.3.1
+
+### Patch Changes
+
+- [`a93a636`](https://github.com/npupko/agency-mcp-server/commit/a93a636016d50b3c6a62eb8eb9f06d9dba4a0d8f) Thanks [@npupko](https://github.com/npupko)! - Fix biome lint errors in tools.ts
+
 ## 0.3.0
 
 ### Minor Changes
